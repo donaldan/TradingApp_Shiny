@@ -4,7 +4,7 @@
 # Andrew Donaldson 2016
 ###################################
 
-theDates <- seq(as.Date("2007-01-01"),Sys.Date(),by="months")
+theDates <- seq(as.Date("2007-01-01"), Sys.Date(), by="months")
 
 shinyUI(
   fluidPage(
@@ -13,7 +13,8 @@ shinyUI(
     sidebarPanel(
       selectInput("strategy", 
                   "Strategy:", 
-                  choices = c("Commodities","US 10Y Bond","Precious_Metals","S&P_500","Portfolio")),
+                  choices = c("Commodities", "US 10Y Bond", 
+                              "Precious_Metals", "S&P_500", "Portfolio")),
       
       selectInput("startDate", 
                   "Start:", 
@@ -35,13 +36,14 @@ shinyUI(
         
         ## TRADING STATISTICS
         tabPanel("Trading Statistics",
-                 fixedRow(
-                   column(8,
-                          fixedRow(column(4,tableOutput("tablePerformance")),
-                                   column(4,tableOutput("tableRisk"))),
-                          fixedRow(column(4,tableOutput("tableDaily")),
-                                   column(4,tableOutput("tableMonthly"))))
-                 )
+                 tableOutput("tablePerformance")
+                 # fixedRow(
+                 #   column(8,
+                 #          fixedRow(column(1,tableOutput("tablePerformance"))
+                 #          # ,         column(4,tableOutput("tableRisk"))),
+                          # fixedRow(column(4,tableOutput("tableDaily")),
+                          #          column(4,tableOutput("tableMonthly"))))
+                 # )))
         ),
         ## RISK
         tabPanel("Risk",plotOutput("plot2",height = 550, width = 550)),

@@ -4,10 +4,16 @@
 # Andrew Donaldson 2016
 ###################################
 
+require(quantmod)
+require(PerformanceAnalytics)
+
 shinyServer(function(input, output) {
   
-  getData <- function(inputPath=inputPath,inputFile=inputFile,keepColumns=keepColumns){
-    data <- read.csv(paste(inputPath,inputFile,sep=""),sep=",")
+  getData <- function(inputPath = inputPath,
+                      inputFile = inputFile,
+                      keepColumns = keepColumns)
+    {
+    data <- read.csv( file.path(inputPath,inputFile), sep=",")
     keepColumns <- c("date","retns")
     dataDaily <- data[,keepColumns]
     colnames(dataDaily) <- c("date","retns")
@@ -17,37 +23,24 @@ shinyServer(function(input, output) {
   }
   
   data <- reactive({
-    ### COMMODITIES
-    if (input$strategy == "Commodities"){
-      dt <- getData(inputPath="C:\\RStudio\\data\\",
+    inputPath <- "~/git/andy-shiny"
+    switch(input$strategy,
+            "Commodities" = getData(inputPath = inputPath,
                     inputFile="Commodities.csv",
-                    keepColumns=c("date","retns"))
-    }
-    ### US10Y Treasury  
-    if (input$strategy == "US 10Y Bond"){
-      dt <- getData(inputPath="C:\\RStudio\\data\\",
+                    keepColumns=c("date","retns")),
+            "US 10Y Bond" = getData(inputPath = inputPath,
                     inputFile="US10Y.csv",
-                    keepColumns=c("date","retns"))
-    }
-    ### GOLD AND SILVER  
-    if (input$strategy == "Precious_Metals"){
-      dt <- getData(inputPath="C:\\RStudio\\data\\",
+                    keepColumns=c("date","retns")),
+            "Precious_Metals" = getData(inputPath = inputPath,
                     inputFile="GoldSilver.csv",
-                    keepColumns=c("date","retns"))
-    }
-    ### SnP 500  
-    if (input$strategy == "S&P_500"){
-      dt <- getData(inputPath="C:\\RStudio\\data\\",
+                    keepColumns=c("date","retns")),
+    "S&P_500" = getData(inputPath = inputPath,
                     inputFile="SPX.csv",
-                    keepColumns=c("Date","retns"))
-    }
-    ### ALL STRATEGIES PORTFOLIO  
-    if (input$strategy == "Portfolio"){
-      dt <- getData(inputPath="C:\\RStudio\\data\\",
+                    keepColumns=c("Date","retns")),
+    "Portfolio" = getData(inputPath = inputPath,
                     inputFile="Portfolio.csv",
                     keepColumns=c("date","retns"))
-    }
-    return(dt)
+    )
   })
   
   output$plot1 <- renderPlot({
@@ -62,7 +55,10 @@ shinyServer(function(input, output) {
       x <- data$date[posStart:posEnd]
       y <- data$rtn[posStart:posEnd]
       
-      xDD <- as.vector(Drawdowns(y/100))
+      xDD <- as.vector(
+        # Drawdowns
+        PerformanceAnalytics::findDrawdowns
+        (y/100))
       
       par(mfrow=c(2,1),cex=0.9,mex=0.4)
       
@@ -129,14 +125,22 @@ shinyServer(function(input, output) {
     
   })
   
-  output$tablePerformance <- renderTable({  
-    data <- data()
+  # create simple temporary data.frame with rownames
+  xx <- data.frame(aa = head(letters), row.names = head(letters))
+  # override default for not displaying rownames - see ?renderTable
+  output$tablePerformance <- renderTable(  expr = xx , rownames = TRUE )
+   
+    output$tablePerformance2 <- renderTable({  
+      data <- data()
     posStart <- min(which(as.Date(data$date,format="%Y-%m-%d") >= as.Date(input$startDate,format="%Y-%m-%d")))
     posEnd <- max(which(as.Date(data$date,format="%Y-%m-%d") <= as.Date(input$endDate,format="%Y-%m-%d")))
     x <- data$date[posStart:posEnd]
     y <- data$rtn[posStart:posEnd]
     
-    dailyDD <- as.vector(Drawdowns(y/100))
+    dailyDD <- as.vector(
+      # Drawdowns
+      PerformanceAnalytics::findDrawdowns
+      (y/100))
     nbDays <- length(x)
     nbYears <- nbDays/252
     totalReturn <- sum(y)
@@ -151,6 +155,7 @@ shinyServer(function(input, output) {
     
     rownames(rtnTable)
     #colnames(rtnTable)
+    print(rtnTable)
     rtnTable
   })
   
@@ -161,7 +166,10 @@ shinyServer(function(input, output) {
     x <- data$date[posStart:posEnd]
     y <- data$rtn[posStart:posEnd]
     
-    dailyDD <- as.vector(Drawdowns(y/100))
+    dailyDD <- as.vector(
+      # Drawdowns
+      PerformanceAnalytics::findDrawdowns
+      (y/100))
     maxDD <- 100*round(min(dailyDD),3)
     recoveryTime <- round(min(which(dailyDD[match(min(dailyDD),dailyDD):length(dailyDD)] == 0)),0)
     painIndex <- round(PainIndex(y),2)
